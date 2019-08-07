@@ -10,10 +10,16 @@ import UIKit
 class ToDoListViewController: UITableViewController {
 
     var items = ["Pack the luggages","Coordinate with a dirver","Visit Turkey"]
-    //
+    //programmatic interface for interacting with the defaults system - .plist file
+    let user_defaults = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        if let list = user_defaults.array(forKey: "ToDoeyListArray") as? [String] {
+            items = list
+        }
     }
     
     //MARK - TableView Datasource Methods
@@ -49,21 +55,24 @@ class ToDoListViewController: UITableViewController {
         
         let alert = UIAlertController(title: "Add a new item", message: "", preferredStyle: .alert)
         
-        let action = UIAlertAction(title: "Add", style: .default){ (action) in
-            //once the user clicks Add button on the alert
-            print("Success! A new item added!")
-            
-            self.items.append(textField.text!) //cannot add NIL
-            
-            //update TableView
-            self.tableView.reloadData()
-        }
-        
         //Text field within alert
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Add a new item"
             textField = alertTextField //cross-reference
         }
+        
+        let action = UIAlertAction(title: "Add", style: .default){ (action) in
+            //once the user clicks Add button on the alert
+            print("Success! A new item added!")
+            
+            self.items.append(textField.text!) //cannot add NIL
+            self.user_defaults.set(self.items, forKey: "ToDoeyListArray") //
+            
+            //update TableView
+            self.tableView.reloadData()
+        }
+        
+        
         
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
