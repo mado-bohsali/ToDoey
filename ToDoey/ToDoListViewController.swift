@@ -18,7 +18,7 @@ class ToDoListViewController: UITableViewController {
         // Do any additional setup after loading the view.
         
         if let list = user_defaults.array(forKey: "ToDoeyListArray") as? [String] {
-            items = list
+            items = list //update the list to refer to user_defaults 
         }
     }
     
