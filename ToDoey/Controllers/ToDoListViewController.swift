@@ -12,29 +12,18 @@ class ToDoListViewController: UITableViewController {
     var items = [Item]()
     
     //programmatic interface for interacting with the defaults system - .plist file
-    let user_defaults = UserDefaults.standard
+    //let user_defaults = UserDefaults.standard
+    let data_file_path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        let first_item =  Item()
-        first_item.title = "Head to the airport"
+        //Encode with NSCoder
         
-        let second_item = Item()
-        second_item.title = "Check in"
+        print(data_file_path!)
         
-        let third_item = Item()
-        third_item.title = "Shop at duty free"
-        
-        items.append(first_item)
-        items.append(second_item)
-        items.append(third_item)
-        
-        
-        if let list = user_defaults.array(forKey: "ToDoeyListArray") as? [Item] {
-            items = list //update the list to refer to user_defaults
-        }
+        loadItems() //items are pre-initiazlied / saved
     }
     
     //MARK - TableView Datasource Methods
@@ -62,6 +51,7 @@ class ToDoListViewController: UITableViewController {
         
         items[indexPath.row].done = !items[indexPath.row].done
         tableView.reloadData()
+        saveItem()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -85,16 +75,42 @@ class ToDoListViewController: UITableViewController {
             item.title = textField.text!
             
             self.items.append(item) //cannot add NIL
-            self.user_defaults.set(self.items, forKey: "ToDoeyListArray") //
-            
-            //update TableView
-            self.tableView.reloadData()
+            //self.user_defaults.set(self.items, forKey: "ToDoeyListArray")
+            self.saveItem()
         }
         
         
         
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
+        
+    }
+    
+    //MARK - Manipulation of boolean
+    func saveItem(){
+        let encoder = PropertyListEncoder()
+        do{
+            let data = try encoder.encode(items)
+            try data.write(to:data_file_path!)
+        } catch{
+            print("Error while decoding \(error)")
+        }
+        
+        //update TableView
+        self.tableView.reloadData()
+
+    }
+    
+    func loadItems(){
+        if let data = try? Data(contentsOf: data_file_path!){
+            let decoder = PropertyListDecoder()
+            do{
+                items = try decoder.decode([Item].self, from: data)
+            } catch{
+                print("Error while decoding \(error)")
+            }
+        }
+        
         
     }
 }
