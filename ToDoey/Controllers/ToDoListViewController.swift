@@ -3,13 +3,14 @@
 //  ToDoey
 //
 //  Created by Mohamad El Bohsaly on 8/7/19.
-//
+//  Controller
 
 import UIKit
 
 class ToDoListViewController: UITableViewController {
 
-    var items = ["Pack the luggages","Coordinate with a dirver","Visit Turkey"]
+    var items = [Item]()
+    
     //programmatic interface for interacting with the defaults system - .plist file
     let user_defaults = UserDefaults.standard
     
@@ -17,8 +18,22 @@ class ToDoListViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        if let list = user_defaults.array(forKey: "ToDoeyListArray") as? [String] {
-            items = list //update the list to refer to user_defaults 
+        let first_item =  Item()
+        first_item.title = "Head to the airport"
+        
+        let second_item = Item()
+        second_item.title = "Check in"
+        
+        let third_item = Item()
+        third_item.title = "Shop at duty free"
+        
+        items.append(first_item)
+        items.append(second_item)
+        items.append(third_item)
+        
+        
+        if let list = user_defaults.array(forKey: "ToDoeyListArray") as? [Item] {
+            items = list //update the list to refer to user_defaults
         }
     }
     
@@ -27,25 +42,26 @@ class ToDoListViewController: UITableViewController {
         return items.count
     }
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-            let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-            cell.textLabel?.text = items[indexPath.row]
-            cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
-            return cell
-        }
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell { //upon app loading - cen be manually triggered later
+        //Difference: the checking/unchecking is lost once a cell is not shown on the screen vs being dequeued and reused
+        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        //let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
+        
+        cell.textLabel?.text = items[indexPath.row].title
+        cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
+        
+        //Ternary operator
+        cell.accessoryType = items[indexPath.row].done ? .checkmark: .none
+        
+        return cell
+    }
 
     //MARK - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         print(items[indexPath.row])
         
-        //Grab a reference for the cell at indexPath
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        } else{
-            //uncheck
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
-        
+        items[indexPath.row].done = !items[indexPath.row].done
+        tableView.reloadData()
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -65,7 +81,10 @@ class ToDoListViewController: UITableViewController {
             //once the user clicks Add button on the alert
             print("Success! A new item added!")
             
-            self.items.append(textField.text!) //cannot add NIL
+            let item = Item()
+            item.title = textField.text!
+            
+            self.items.append(item) //cannot add NIL
             self.user_defaults.set(self.items, forKey: "ToDoeyListArray") //
             
             //update TableView
