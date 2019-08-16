@@ -3,16 +3,21 @@
 //  ToDoey
 //
 //  Created by Mohamad El Bohsaly on 8/9/19.
-//  Copyright © 2019 Mohamad El Bohsaly. All rights reserved.
 //
 
 import UIKit
 import CoreData
+import RealmSwift
 
 class CategoryViewController: UITableViewController {
-
-    var categories = [Category]()
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
+    let realm = try! Realm()
+    
+    //var categories = [Category]()
+    var categories:Results<Category>?
+    
+    //let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    //V1.0
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,12 +33,12 @@ class CategoryViewController: UITableViewController {
 
     override func numberOfSections(in tableView: UITableView) -> Int {
         // #warning Incomplete implementation, return the number of sections
-        return categories.count
+        return 1
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // #warning Incomplete implementation, return the number of rows
-        return categories.count
+        return categories?.count ?? 1 //NIL coalesce operator
     }
     
     // MARK: - Table view delegate methods
@@ -42,7 +47,8 @@ class CategoryViewController: UITableViewController {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
 
         // Configure the cell...
-        cell.textLabel?.text = categories[indexPath.row].name
+        cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
+        cell.textLabel?.text = categories?[indexPath.row].name ?? "No categories created yet.."
         
         return cell
     }
@@ -55,7 +61,7 @@ class CategoryViewController: UITableViewController {
         let destination_view_controller = segue.destination as! ToDoListViewController
         
         if let index_path = tableView.indexPathForSelectedRow{
-            destination_view_controller.selected_category = categories[index_path.row]
+            destination_view_controller.selected_category = categories?[index_path.row]
         }
     }
     
@@ -114,13 +120,12 @@ class CategoryViewController: UITableViewController {
             text_field.placeholder = "Add a new category"
         }
         
-        let action = UIAlertAction(title: "Add", style: .default) { (action) in
+        let action = UIAlertAction(title: "Add", style: .cancel) { (action) in
             
-            let category = Category(context: self.context)
+            let category = Category()//(context: self.context)
             category.name = text_field.text!
             
-            self.categories.append(category)
-            self.saveCategory()
+            self.save(category:category)
         }
         
         alert.addAction(action)
@@ -129,9 +134,12 @@ class CategoryViewController: UITableViewController {
     }
     
     // MARK: - Manipulation methods
-    func saveCategory(){
+    func save(category:Category){
         do{
-            try context.save()
+            //try context.save()
+            try realm.write {
+                realm.add(category)
+            }
         } catch{
             print("Error saving your changes: \(error)")
         }
@@ -140,12 +148,14 @@ class CategoryViewController: UITableViewController {
     }
     
     func loadCategories(){
-        let request:NSFetchRequest<Category> = Category.fetchRequest()
-        do{
-            categories = try context.fetch(request)
-        } catch{
-            print("Error loading your categories: \(error)")
-        }
+//        let request:NSFetchRequest<Category> = Category.fetchRequest()
+//        do{
+//            categories = try context.fetch(request)
+//        } catch{
+//            print("Error loading your categories: \(error)")
+//        }
+
+        categories = realm.objects(Category.self) //container, Result<Category>
         
         tableView.reloadData()
     }
