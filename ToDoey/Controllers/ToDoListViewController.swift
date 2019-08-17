@@ -52,6 +52,14 @@ class ToDoListViewController: SwipeTableViewController {
         }
     }
     
+    override func viewWillDisappear(_ animated: Bool) { //just before view controller disappears
+        guard let default_color = UIColor(hexString: "1D9BF6") else{
+            fatalError()
+        }
+        navigationController?.navigationBar.barTintColor = default_color
+        navigationController?.navigationBar.tintColor = FlatWhite()
+    }
+    
     //MARK - TableView Datasource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return items?.count ?? 1

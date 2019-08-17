@@ -55,7 +55,11 @@ class CategoryViewController: SwipeTableViewController {
         // Configure the cell...
         cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
         cell.textLabel?.text = categories?[indexPath.row].name ?? "No categories created yet.."
-        cell.backgroundColor = UIColor(hexString:categories?[indexPath.row].color ?? "1D9BF6")
+        
+        if let cell_background = UIColor(hexString:categories?[indexPath.row].color ?? "1D9BF6"){
+            cell.backgroundColor = cell_background
+            cell.textLabel?.textColor = ContrastColorOf(cell_background, returnFlat: false)
+        }
         return cell
     }
     
