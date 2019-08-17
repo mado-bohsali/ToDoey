@@ -8,17 +8,21 @@
 import UIKit
 //import CoreData
 import RealmSwift
+import ChameleonFramework
 
-class ToDoListViewController: UITableViewController, UISearchBarDelegate {
+class ToDoListViewController: SwipeTableViewController {
 
     var items:Results<Item>?
     let realm = try! Realm()
+    
+    @IBOutlet weak var search_bar: UISearchBar!
     
     var selected_category:Category?{ //optional
         didSet{
             loadItems() //items are pre-initiazlied / saved
         }
     }
+    
     //programmatic interface for interacting with the defaults system - .plist file
     //let user_defaults = UserDefaults.standard
     let data_file_path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
@@ -30,11 +34,22 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        //Encode with NSCoder
+        tableView.rowHeight = 75.0
         
         print(data_file_path!)
-        
-        
+    }
+    
+    override func viewWillAppear(_ animated: Bool) { //just before viewDidLoad
+        if let nav_color = selected_category?.color{
+            title = selected_category!.name
+            
+            guard let nav_bar = navigationController?.navigationBar else{
+                fatalError("Navigation controller does NOT exist.")
+            }
+            nav_bar.barTintColor = UIColor(hexString: nav_color)
+            nav_bar.tintColor = ContrastColorOf(UIColor(hexString: nav_color)!, returnFlat: true)
+            search_bar.barTintColor = UIColor(hexString: nav_color)
+        }
     }
     
     //MARK - TableView Datasource Methods
@@ -42,15 +57,25 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
         return items?.count ?? 1
     }
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell { //upon app loading - cen be manually triggered later
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        //upon app loading - cen be manually triggered later
         //Difference: the checking/unchecking is lost once a cell is not shown on the screen vs being dequeued and reused
         //let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        let cell = UITableViewCell(style: .default, reuseIdentifier: "ToDoItemCell")
+        
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = items?[indexPath.row]{
             cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
             cell.textLabel?.text = item.title
             cell.accessoryType = item.done ? .checkmark : .none
+            
+            if let color = UIColor(hexString: selected_category!.color)?.darken(byPercentage:CGFloat(indexPath.row)/CGFloat(items!.count)){
+                cell.backgroundColor = color
+                //flat color: SOLID - means solid ink coverage with no gradations, screens or halftones
+                cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: false)
+            }
+            
+            
         } else{
             cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
             cell.textLabel?.text = "No items added so far.."
@@ -69,6 +94,7 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
                   //OR items[indexPath.row].setValue(!items[indexPath.row].done, forKey: "done")
                     
                   //realm.delete(item)
+//                    save(item: item)
                 }
             } catch{
                print("Error saving done status \(error)")
@@ -77,7 +103,7 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
         }
         
         tableView.reloadData()
-        //saveItem()
+//        save(item)
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -107,6 +133,8 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
                         item.title = textField.text!
                         item.date_created = Date()
                         current_category.items.append(item)
+                        //self.save(item: item)
+                        self.realm.add(item)
                     }
                     
                 } catch{
@@ -139,8 +167,17 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
 //
 //    }
 
-    func save(){
-        
+    func save(item:Item){
+        do{
+            try realm.write{
+                realm.add(item)
+            }
+        } catch{
+            print("Error saving item: \(error)")
+        }
+
+        //update TableView
+        self.tableView.reloadData()
     }
 //    func loadItems(){ //V 1.0
 //        if let data = try? Data(contentsOf: data_file_path!){
@@ -180,6 +217,22 @@ class ToDoListViewController: UITableViewController, UISearchBarDelegate {
         items = selected_category?.items.sorted(byKeyPath: "title", ascending: true)
         tableView.reloadData()
     }
+    
+    override func updateModel(at indexPath: IndexPath) {
+        if let item = items?[indexPath.row]{
+            do{
+                try! realm.write {
+                    realm.delete(item)
+                }
+            } catch{
+                print("Error deleting item \(error)")
+            }
+        }
+        
+        tableView.reloadData()
+    }
+    
+    
     //MARK: - Search bar methods
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
 //        let request:NSFetchRequest<Item> = Item.fetchRequest()

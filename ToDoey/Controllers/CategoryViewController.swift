@@ -6,10 +6,12 @@
 //
 
 import UIKit
-import CoreData
+//import CoreData
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
+    
     
     let realm = try! Realm()
     
@@ -27,6 +29,7 @@ class CategoryViewController: UITableViewController {
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem
         loadCategories()
+        tableView.rowHeight = 75.0
     }
 
     // MARK: - Table view data source
@@ -44,12 +47,15 @@ class CategoryViewController: UITableViewController {
     // MARK: - Table view delegate methods
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        //in the identity inspector of the cell (storyboard) change the module and class it inherits from
+        
+        //cell.delegate = self
 
         // Configure the cell...
         cell.textLabel?.font = UIFont(name: "Verdana", size: 13)
         cell.textLabel?.text = categories?[indexPath.row].name ?? "No categories created yet.."
-        
+        cell.backgroundColor = UIColor(hexString:categories?[indexPath.row].color ?? "1D9BF6")
         return cell
     }
     
@@ -120,15 +126,20 @@ class CategoryViewController: UITableViewController {
             text_field.placeholder = "Add a new category"
         }
         
-        let action = UIAlertAction(title: "Add", style: .cancel) { (action) in
-            
+        let action = UIAlertAction(title: "Add", style: .default) { (action) in
             let category = Category()//(context: self.context)
             category.name = text_field.text!
-            
+            category.color = UIColor.randomFlat.hexValue()
             self.save(category:category)
         }
         
         alert.addAction(action)
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { (action) in
+            
+        })
+        
+        
         present(alert, animated: true, completion: nil)
         
     }
@@ -156,6 +167,18 @@ class CategoryViewController: UITableViewController {
 //        }
 
         categories = realm.objects(Category.self) //container, Result<Category>
+        
+        tableView.reloadData()
+    }
+    
+    override func updateModel(at indexPath: IndexPath) {
+        do{
+            try! realm.write {
+                realm.delete(self.categories![indexPath.row])
+            }
+        }catch{
+            print("Error deleting category \(error)")
+        }
         
         tableView.reloadData()
     }
